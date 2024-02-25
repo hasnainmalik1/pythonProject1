@@ -18,25 +18,23 @@ os.makedirs(save_path, exist_ok=True)
 @app.route('/api/endpoint', methods=['POST'])
 def receive_video_data():
     try:
+        # Receive video file and parameters from the request
         video_file = request.files['video']
+        x = int(request.form['x'])
+        y = int(request.form['y'])
+        width = int(request.form['width'])
+        height = int(request.form['height'])
         # Save or process the video file as needed
         video_file.save(os.path.join(save_path, 'video.jpg'))
 
-        # Convert the saved image back to a video
-        images = []
-        for filename in os.listdir(save_path):
-            if filename.endswith(".jpg"):
-                img = cv2.imread(os.path.join(save_path, filename))
-                height, width, layers = img.shape
-                size = (width, height)
-                images.append(img)
+        # Crop the region of interest from the saved image
+        img = cv2.imread(os.path.join(save_path, 'video.jpg'))
+        roi = img[y:y + height, x:x + width]
 
-        out = cv2.VideoWriter(os.path.join(save_path, 'output_video.mp4'), cv2.VideoWriter_fourcc(*'mp4v'), 1, size)
-        for image in images:
-            out.write(image)
-        out.release()
+        # Save the cropped region of interest
+        cv2.imwrite(os.path.join(save_path, 'cropped_video.jpg'), roi)
 
-        return jsonify({'message': 'Video data received and converted successfully'})
+        return jsonify({'message': 'Video data received and processed successfully'})
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -44,4 +42,3 @@ def receive_video_data():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
